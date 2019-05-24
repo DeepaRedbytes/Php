@@ -171,7 +171,8 @@ class Common extends REST_Controller {
         unset($detailService['category']);
         unset($detailService['created_by']);
         $output = ['result' => true, 'message' => 'Success' , "service"=>$detailService];
-        $this->response($output, 200); die;
+         $this->response($output, 200); die;
+        // $this->output->get_output($output,200);die;
       }
       $error = $this->validation_errors();
       $output = ['result' => false, 'message' => $error];      
