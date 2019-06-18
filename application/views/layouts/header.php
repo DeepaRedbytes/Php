@@ -7,6 +7,7 @@ $user = '';
 $about = '';
 $category = '';
 $event = '';
+$plans = '';
 if (strpos($url,'dashboard') !== false) {
     $dashboard = 'activeclass';
 } else if (strpos($url,'user') !== false) {
@@ -21,7 +22,10 @@ if (strpos($url,'dashboard') !== false) {
     $adrequest = 'activeclass';
 } else if (strpos($url,'event') !== false) {
     $event = 'activeclass';
-}?>
+} else if (strpos($url,'plan') !== false) {
+    $plans = 'activeclass';
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -150,7 +154,13 @@ if (strpos($url,'dashboard') !== false) {
           <i class="fas fa-list-alt"></i>
           <span>Categorie List</span>
         </a>
-      </li>  
+      </li>
+       <li class="nav-item active">
+        <a class="nav-link main-link <?=$plans;?>" href="<?= base_url();?>index.php/plan">
+          <i class="fas fa-list-alt"></i>
+          <span>Plans List</span>
+        </a>
+      </li>   
       <li class="nav-item active">
           <a class="nav-link main-link">
               <i class="fas fa-file-contract"></i>

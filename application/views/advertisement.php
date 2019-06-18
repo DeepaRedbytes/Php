@@ -11,15 +11,58 @@
 
     <ul class="nav nav-tabs navpd" id="myTab" role="tablist">
       <li class="nav-item">
-        <a class="nav-link pd_navlink active" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="false">Admin</a>
+        <a class="nav-link pd_navlink active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">User</a>
       </li>
+
       <li class="nav-item">
-        <a class="nav-link pd_navlink" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">User</a>
-      </li>      
+        <a class="nav-link pd_navlink" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="false">Admin</a>
+      </li>
+            
     </ul>
 
     <div class="tab-content" id="myTabContent">
-      <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+      <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered" id="dataTable1" width="100%" cellspacing="0">
+              <thead>
+                <tr>              
+                  <th>Srn.</th>
+                  <th>User</th>
+                  <th>Start Date</th>    
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Logo</th> 
+                  <th>Description</th>             
+                  <th>Pay Status</th>  
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>                  
+              <tbody>
+                <?php $i=1; foreach($adList as $ad) { ?>
+                  <tr id="<?php echo $ad['id']; ?>">                    
+                    <td><?=$i;?></td>         
+                    <td><?php echo $ad['user_name'];?></td>       
+                    <td><?php echo date("d-m-Y",strtotime($ad['start_date'])); ?></td>
+                    <td><?php echo $ad['title'];?></td>
+                    <td><?=$ad['category_name'];?></td>
+                    <td><img class="user-img custimg text-center" src="<?= base_url();?><?php echo $ad['thumbnail']; ?>"/></td>
+                    <td><?php echo substr($ad['description'], 0, 50); ?></td>
+                    <td><?php echo $ad['payment']; ?></td>
+                    <td><input type="checkbox" class="statusToggle" <?php if($ad['status'] == 1) { ?> checked <?php } ?> data-toggle="toggle" data-on="Active" data-off="Inactive" data-onstyle="success" data-offstyle="danger"></td>
+                    <td>
+                      <a href="advertisement/create?id=<?php echo $ad['id']; ?>"><button type="button" class="btn btn-info tb-btn">Edit</button></a>
+                      <button type="button" class="deleteButton btn btn-danger tb-btn">Delete</button>
+                    </td>
+                  </tr>
+                <?php $i++; }  ?>
+              </tbody>
+            </table>
+          </div>
+        </div>   
+      </div> 
+      <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
         <div class="card-body">
           <div class="table-responsive">
             <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
@@ -57,45 +100,7 @@
         </div>
       </div>
 
-      <div class="tab-pane fade" id="home" role="tabpanel" aria-labelledby="home-tab">
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-bordered" id="dataTable1" width="100%" cellspacing="0">
-              <thead>
-                <tr>              
-                  <th>Srn.</th>
-                  <th>User</th>
-                  <th>Start Date</th>    
-                  <th>Title</th>
-                  <th>Category</th>
-                  <th>Logo</th> 
-                  <th>Description</th>             
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>                  
-              <tbody>
-                <?php $i=1; foreach($adList as $ad) { ?>
-                  <tr id="<?php echo $ad['id']; ?>">                    
-                    <td><?=$i;?></td>         
-                    <td><?php echo $ad['user_name'];?></td>       
-                    <td><?php echo date("d-m-Y",strtotime($ad['start_date'])); ?></td>
-                    <td><?php echo $ad['title'];?></td>
-                    <td><?=$ad['category_name'];?></td>
-                    <td><img class="user-img custimg text-center" src="<?= base_url();?><?php echo $ad['thumbnail']; ?>"/></td>
-                    <td><?php echo substr($ad['description'], 0, 50); ?></td>
-                    <td><input type="checkbox" class="statusToggle" <?php if($ad['status'] == 1) { ?> checked <?php } ?> data-toggle="toggle" data-on="Active" data-off="Inactive" data-onstyle="success" data-offstyle="danger"></td>
-                    <td>
-                      <a href="advertisement/create?id=<?php echo $ad['id']; ?>"><button type="button" class="btn btn-info tb-btn">Edit</button></a>
-                      <button type="button" class="deleteButton btn btn-danger tb-btn">Delete</button>
-                    </td>
-                  </tr>
-                <?php $i++; }  ?>
-              </tbody>
-            </table>
-          </div>
-        </div>   
-      </div>      
+           
     </div>
   </div>
 
@@ -109,7 +114,7 @@ $('.statusToggle').change(function(e){
   $.ajax({
     type:'POST',
     dataType:'JSON',
-    url:'event/statusUpdate',
+    url:'advertisement/statusUpdate',
     data:{"mode": mode, "trid": trid},
     success:function(data) {
     }

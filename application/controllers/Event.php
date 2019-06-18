@@ -7,7 +7,7 @@ class Event extends CI_Controller {
 	 public function __construct() {
 	  	parent::__construct();
 	   	$this->connection =  new MongoDB\Client("mongodb://localhost:27017");
-	   	$this->load->model('Common','common');	
+	   	$this->load->model('Common');	
 	   	if(!$this->session->userdata['user']){
 	        redirect('login');
 	    }  
@@ -15,6 +15,7 @@ class Event extends CI_Controller {
 
 	public function index() {
 
+		$update = $this->Common->updateReadFlag('event', 0);
 		$user_data = $this->session->all_userdata(); 
 		//$adminID = '5ca48fd13c2a7975433a7fd2'; 
 		//print_r($user_data);
@@ -42,6 +43,9 @@ class Event extends CI_Controller {
 
             $detailcat = $this->connection->community->category->findOne(["_id"=> new MongoDB\BSON\ObjectId($value['category'])]); 
       		$doc['category_name'] = $detailcat['category'];
+
+
+      		$doc['payment'] = $this->Common->checkPaymentStatus($doc['id']);
 
         	$doc['user_name'] = $detailuser['user_name']; 
             $doc['status'] = $value['status'];

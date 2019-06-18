@@ -11,14 +11,61 @@
     </div>
     <ul class="nav nav-tabs navpd" id="myTab" role="tablist">
       <li class="nav-item">
-        <a class="nav-link pd_navlink active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">Admin</a>
+        <a class="nav-link pd_navlink active" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="false">User</a>
       </li>
+
       <li class="nav-item">
-        <a class="nav-link pd_navlink" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="false">User</a>
+        <a class="nav-link pd_navlink" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">Admin</a>
       </li>
+      
     </ul>
     <div class="tab-content" id="myTabContent">
-      <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+      <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered" id="dataTable1" width="100%" cellspacing="0">
+              <thead>
+                <tr>
+                  <th>Srn.</th>
+                  <th>User</th>
+                  <th>Service Name</th>
+                  <th>Category</th>
+                  <th>Logo</th>
+                  <th>Price</th>
+                  <th>Pay Status</th> 
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>                          
+              <tbody>
+                <?php $i=1; foreach($services as $service) { ?>                
+                  <tr id="<?php echo $service['_id']; ?>">
+                    <td><?= $i;?></td>
+                    <td><?= $service['user_name'];?></td>
+                    <td><?= $service['name'];?></td>
+                    <td><?= $service['category_name'];?></td>
+                    <td> 
+                      <?php if(isset($service['thumbnail'])){ ?>
+                        <img class="user-img custimg text-center" src="<?php echo base_url().'/'.$service['thumbnail'];?>"/>
+                      <?php }?>
+                    </td>
+                    <td><?php if($service['price'] != 0){echo $service['price'];}?></td>
+                    <td><?php echo $service['payment']; ?></td>
+                    <td><input type="checkbox" class="statusToggle" <?php if($service['status'] == 1) { ?> checked <?php } ?> data-toggle="toggle" data-on="Active" data-off="Inactive" data-onstyle="success" data-offstyle="danger"></td>
+                    <td>
+                      <a href="service/create?id=<?php echo $service['id']; ?>"><button type="button" class="btn btn-info tb-btn">Edit</button></a>
+                      <button type="button" class="deleteButton btn btn-danger tb-btn">Delete</button>
+                    </td>
+                  </tr>
+                <?php $i++; } ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="tab-pane fade" id="home" role="tabpanel" aria-labelledby="home-tab">
         <div class="card-body">
           <div class="table-responsive">
             <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
@@ -60,47 +107,7 @@
       </div>
 
 
-      <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-bordered" id="dataTable1" width="100%" cellspacing="0">
-              <thead>
-                <tr>
-                  <th>Srn.</th>
-                  <th>User</th>
-                  <th>Service Name</th>
-                  <th>Category</th>
-                  <th>Logo</th>
-                  <th>Price</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>                          
-              <tbody>
-                <?php $i=1; foreach($services as $service) { ?>                
-                  <tr id="<?php echo $service['_id']; ?>">
-                    <td><?= $i;?></td>
-                    <td><?= $service['user_name'];?></td>
-                    <td><?= $service['name'];?></td>
-                    <td><?= $service['category_name'];?></td>
-                    <td> 
-                      <?php if(isset($service['thumbnail'])){ ?>
-                        <img class="user-img custimg text-center" src="<?php echo base_url().'/'.$service['thumbnail'];?>"/>
-                      <?php }?>
-                    </td>
-                    <td><?php if($service['price'] != 0){echo $service['price'];}?></td>
-                    <td><input type="checkbox" class="statusToggle" <?php if($service['status'] == 1) { ?> checked <?php } ?> data-toggle="toggle" data-on="Active" data-off="Inactive" data-onstyle="success" data-offstyle="danger"></td>
-                    <td>
-                      <a href="service/create?id=<?php echo $service['id']; ?>"><button type="button" class="btn btn-info tb-btn">Edit</button></a>
-                      <button type="button" class="deleteButton btn btn-danger tb-btn">Delete</button>
-                    </td>
-                  </tr>
-                <?php $i++; } ?>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+      
     </div>  
   </div>
 </div>

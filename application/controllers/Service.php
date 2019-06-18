@@ -6,6 +6,7 @@ class Service extends CI_Controller {
 		parent::__construct();
 		$this->connection =  new MongoDB\Client("mongodb://localhost:27017");
 		 $this->load->library('upload');
+     $this->load->model('Common');
     if(!$this->session->userdata['user'])
     {
         redirect('login');
@@ -13,6 +14,8 @@ class Service extends CI_Controller {
 	}
 
   public function index() {
+
+    $update = $this->Common->updateReadFlag('service', 0);
     //$user_data = $this->session->all_userdata(); 
     //$adminID = '5ca48fd13c2a7975433a7fd2'; 
     //print_r($user_data);
@@ -47,6 +50,8 @@ class Service extends CI_Controller {
       $value['id'] = $id_array['oid'];
       $detailuser = $this->connection->community->user->findOne(["_id"=> new MongoDB\BSON\ObjectId($value['created_by'])]); 
       $value['user_name'] = $detailuser['user_name']; 
+
+      $value['payment'] = $this->Common->checkPaymentStatus($value['id']);
 
       $detailcat = $this->connection->community->category->findOne(["_id"=> new MongoDB\BSON\ObjectId($value['category'])]); 
       $value['category_name'] = $detailcat['category'];
@@ -171,7 +176,7 @@ class Service extends CI_Controller {
       unset($data['hidden_image_banner']);
       $dt = new DateTime();
 
-      if(empty($sid)){        
+      if(empty($sid)){     
         $data["created_at"]= $dt->format('Y-m-d H:i:s');
         $insert = $serviceCollection->insertOne($data);
         $this->session->set_flashdata('service','Service added successfully.'); 

@@ -56,4 +56,16 @@ class Common extends CI_Model {
         //}
         return $doc;
 	 }
+
+    public function updateReadFlag($table, $flag){
+        $collection = $this->connection->community->$table;
+        $result = $collection->updateMany([], array('$set'=> array('read'=>$flag)));
+        return true;
+    }
+
+    public function checkPaymentStatus($typeId){
+        $trailfav = $this->connection->community->payment->findOne(["typeId"=> new MongoDB\BSON\ObjectId($typeId)]);
+        if(empty($trailfav)) { return 'No initiated'; }
+        else { return $trailfav['payStatus']; }
+    }
 }

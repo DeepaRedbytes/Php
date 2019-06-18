@@ -243,7 +243,7 @@ if(!empty($serviceDetail)) {
 
                                       <?php // if(!empty($days)){ ?>
                                       
-                                          <input type="checkbox" id="weekday-all" onchange="checkAll(this)" <?php if(count($days) === 7){ echo 'checked'; }?>/>
+                                          <input type="checkbox" id="weekday-all" onchange="checkAll(this)"/>
                                         <label for="weekday-all">All</label>
                                         <input type="checkbox" <?php if(in_array("Mon", $days)){ echo 'checked';}?> id="weekday-mon" class="weekday" name=days[] value="Mon"/>
                                         <label for="weekday-mon">Mon</label>
@@ -269,12 +269,12 @@ if(!empty($serviceDetail)) {
                               <div class="col-md-4 full-input mr-3">
                                   <label for='name'>Start Time :</label>
                                   <!-- <input id="timepicker" placeholder="00:00" name="start_time" class="validate ui-timepicker-input" required="" autocomplete="off" value="<?=$start_time?>"> -->
-                                  <input id="start" name="start_time" class="validate ui-timepicker-input" placeholder="00:00" value="<?=$start_time?>" required=""/>
+                                  <input id="start" name="start_time" class="validate ui-timepicker-input" placeholder="00:00" value="<?=$start_time?>" required=""/><i class="mandfeild">*</i>
                               </div>
                               <div class="col-md-4 full-input mr-3">
                                   <label for='name'> End Time :</label>
                                   <!-- <input id="timepicker1" placeholder="00:00" name=end_time" class="validate ui-timepicker-input" required="" autocomplete="off" value="<?=$end_time;?>"> -->
-                                  <input id="end" name="end_time" class="validate ui-timepicker-input" placeholder="00:00" value="<?=$end_time?>" required=""/>
+                                  <input id="end" name="end_time" class="validate ui-timepicker-input" placeholder="00:00" value="<?=$end_time?>" required=""/><i class="mandfeild">*</i>
                               </div>
                              </div> 
 
@@ -586,7 +586,7 @@ $("#weekday-all").prop("checked", false);
     if ($('#longitude').val() == "") {
        //this will stop form auto submit thus showing your error
       e.preventDefault();
-      alert('please select valid location');
+      alert('Please select valid location');
         // $('#location').html("please enter your name")
     }
 });
@@ -598,7 +598,10 @@ $("#weekday-all").prop("checked", false);
 });
 </script>
 
-
+<!-- <script type="text/javascript">
+  $("#start").keypress(function(event) {event.preventDefault();});
+  $("#end").keypress(function(event) {event.preventDefault();});
+</script> -->
 <script type="text/javascript">
 $(document).ready(function() {
   $('body').on('change', '#priceId', function(){
@@ -783,10 +786,7 @@ else {
 
   <!-- stepper form validation -->
   
-<!-- <script type="text/javascript">
-  $("#start").keypress(function(event) {event.preventDefault();});
-  $("#end").keypress(function(event) {event.preventDefault();});
-</script> -->
+
   
   <!-- timepicker -->
 <script>
@@ -902,8 +902,8 @@ $(document).ready(function() {
     // location types.    //autocomplete
     autocomplete = new google.maps.places.Autocomplete(
         (document.getElementById('location')),{
-          types: ['geocode'],
-          componentRestrictions: {country: 'fr'}
+          types: ['geocode']//,
+          //componentRestrictions: {country: 'fr'}
         }
     );
 
@@ -954,7 +954,7 @@ $(document).ready(function() {
       
     
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBhwbcYBb4yFbB39UJlTuDLnpD95R_9PD8&libraries=places&callback=initAutocomplete" async defer></script> 
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAPYFvrgE--_A4rjNPXQanLfd6JDOb6pns&libraries=places&callback=initAutocomplete" async defer></script> 
     
 
 </body>

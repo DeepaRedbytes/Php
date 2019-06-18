@@ -251,7 +251,7 @@ if(!empty($adDetail)) {
                   </div>
                   <div class="col-md-3 full-input mr-3">
                       <label for='name'>End Date :</label>
-                      <input type='date' id="end_date" name='end_date' placeholder='Date' value="<?=$end_date;?>">
+                      <input type='date' id="end_date" name='end_date' placeholder='Date' value="<?=$end_date;?>" required><i class="mandfeild">*</i>
                   </div>
                   <div class="col-md-2 full-input mr-3">
                       <label for='name'>Time :</label>
@@ -469,7 +469,7 @@ if(!empty($adDetail)) {
     if ($('#longitude').val() == "") {
        //this will stop form auto submit thus showing your error
       e.preventDefault();
-      alert('please enter valid location');
+      alert('Please select valid location');
     }
 });
 </script>
@@ -661,8 +661,8 @@ $(document).ready(function() {
   function initAutocomplete() { 
     autocomplete = new google.maps.places.Autocomplete(
         (document.getElementById('location')),{
-          types: ['geocode'],
-          componentRestrictions: {country: 'fr'}
+          types: ['geocode']//,
+          //componentRestrictions: {country: 'fr'}
         }
     );
 
@@ -705,7 +705,9 @@ $(document).ready(function() {
     $("#longitude").val(lng);
   }
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBhwbcYBb4yFbB39UJlTuDLnpD95R_9PD8&libraries=places&callback=initAutocomplete" async defer></script>    
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAPYFvrgE--_A4rjNPXQanLfd6JDOb6pns&libraries=places&callback=initAutocomplete" async defer></script>
+
 
 
 

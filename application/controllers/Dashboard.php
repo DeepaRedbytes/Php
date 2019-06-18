@@ -20,14 +20,23 @@ class Dashboard extends CI_Controller {
 		$advertisementCount = $this->connection->community->advertisement->find();
 		$data['advertisementCount'] = count(iterator_to_array($advertisementCount));
 
+		$unreadadvertisementCount = $this->connection->community->advertisement->find(array('read'=>1));
+		$data['unreadadvertisementCount'] = count(iterator_to_array($unreadadvertisementCount));
+
 		$eventCount = $this->connection->community->event->find();
 		$data['eventCount'] = count(iterator_to_array($eventCount));
+
+		$unreadeventCount = $this->connection->community->event->find(array('read'=>1));
+		$data['unreadeventCount'] = count(iterator_to_array($unreadeventCount));
 
 		$userCount = $this->connection->community->user->find();
 		$data['userCount'] = count(iterator_to_array($userCount));
 
 		$serviceCount = $this->connection->community->service->find();
 		$data['serviceCount'] = count(iterator_to_array($serviceCount));
+
+		$unreadserviceCount = $this->connection->community->service->find(array('read'=>1));
+		$data['unreadserviceCount'] = count(iterator_to_array($unreadserviceCount));
 
 		$this->load->view('dashboard',$data);
 	}

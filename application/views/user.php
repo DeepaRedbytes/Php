@@ -22,7 +22,7 @@
                 <?php $i=1; foreach($userList as $users) { ?>
                   <tr id="<?php echo $users['id']; ?>">
                     <td><?= $i;?></td>
-                    <td> <img class="user-img custimg text-center" src="<?php echo $users['profile_image']; ?>"/></td>
+                    <td><img class="user-img custimg text-center" src="<?php echo $users['profile_image']; ?>"/></td>   
                     <td><?php echo $users['user_name']; ?></td>
                     <td><?php echo $users['email']; ?></td>
                     <td><?php echo $users['login_type']; ?></td>

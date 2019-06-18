@@ -13,6 +13,7 @@ class Common extends REST_Controller {
 
   var $client_service = "community-client";
   var $auth_key       = "restapi";
+  
 
   public function check_auth_client(){
       $client_service = $this->input->get_request_header('Client-Service', TRUE);
@@ -26,21 +27,19 @@ class Common extends REST_Controller {
 
 	function index_get(){
     //$data = $this->post();
-
+    $date = new DateTime();
+    $todaysdate = $date->format('Y-m-d H:i:s');
     $get_data = $this->input->get();
 
     $check_auth_client = $this->check_auth_client();
     $response = array();
     if($check_auth_client == true){   
-
-        // $latitude = '37'; 
-        // $longitude = '-122';
         $latitude = $get_data['latitude'];
         $longitude = $get_data['longitude'];
 
         $Query = [];
         $options = [];
-        //$Query = array('status'=>1);
+        $Query = array('status'=>1);
         //$options = ['sort' => ['created_at' => -1], 'limit' => 5]; 
 
         $result = $this->connection->community->service->find($Query, $options);
@@ -56,6 +55,7 @@ class Common extends REST_Controller {
         }
         $service = array_slice(array_values($this->aasort($servicesList,"distance")), 0, 5);
 
+        $Query = array('status'=>1); //, 'end_date'=> array('$gt'=> $todaysdate)
         $result1 = $this->connection->community->event->find($Query, $options);
         $eventList=array();
         $event=array();
@@ -90,6 +90,8 @@ class Common extends REST_Controller {
   }
 
   function service_get(){
+    // $date = new DateTime();
+    // $todaysdate = $date->format('Y-m-d H:i:s');
     $data = $this->post();
     $check_auth_client = $this->check_auth_client();
     $response = array();
@@ -97,16 +99,16 @@ class Common extends REST_Controller {
       $set_data = $this->input->get();     
       
       $Query = [];
-      //$Query = array('status'=>1);
+      $Query = array('status'=>1);
       if(isset($set_data['userID'])) { 
         $userID = $set_data['userID'];
-        //$Query = array('status'=>1);;
         if(isset($userID)) { 
           $Query = array('created_by' =>new MongoDB\BSON\ObjectId($userID)); 
         } 
       }
 
-      $options = ['sort' => ['created_at' => -1]]; 
+      $options = [];
+      //$options = ['sort' => ['created_at' => -1]]; 
       $result = $this->connection->community->service->find($Query, $options);
       $services=array();
       $serviceList=array();
@@ -132,6 +134,12 @@ class Common extends REST_Controller {
         unset($value['_id']);
         unset($value['created_by']);
         unset($value['category']);
+
+        if($value['status'] === 1){
+          $value['available'] = 1;
+        }else{
+           $value['available'] = 0;
+        }
         array_push($serviceList, $value);
       }
       $services = array_values($this->aasort($serviceList,"distance"));
@@ -152,11 +160,11 @@ class Common extends REST_Controller {
       if($this->form_validation->run() == TRUE){
         $serviceID = $set_data['serviceID'];
         $collectionService =$this->connection->community->service;
-        $detailService = $collectionService->findOne(array('_id'=>new MongoDB\BSON\ObjectId($serviceID)));
+        $detailService = $collectionService->findOne(array('_id'=>new MongoDB\BSON\ObjectId($serviceID), 'status'=>1));
 
         if(empty($detailService)){
-          $output = ['result' => false, 'message' => 'Error' , "service"=>'no service listed'];
-          $this->response($output, 422); die;
+          $output = ['result' => false, 'message' => 'This service is not available', 'available'=> 0];
+          $this->response($output, 200); die;
         }
 
         $detailService['id'] = (string)$detailService['_id']; 
@@ -166,17 +174,17 @@ class Common extends REST_Controller {
         if(isset($set_data['userID'])) { 
           $detailService['favourite'] = $this->isfavourite($set_data['userID'], $serviceID);
         }
-
         unset($detailService['_id']);
         unset($detailService['category']);
         unset($detailService['created_by']);
+
+        $detailService['available'] = 1;
         $output = ['result' => true, 'message' => 'Success' , "service"=>$detailService];
-         $this->response($output, 200); die;
-        // $this->output->get_output($output,200);die;
+        $this->response($output, 200); die;
       }
       $error = $this->validation_errors();
       $output = ['result' => false, 'message' => $error];      
-      $this->response($output, 422);
+      $this->response($output, 200);
     }
   } 
 
@@ -186,84 +194,116 @@ class Common extends REST_Controller {
     $response = array();
     if($check_auth_client == true){ 
       $data = $this->input->post();
-      $sid = $data['service_id'];
-      $data['status'] = 0;
 
-      // if(!isset($data['highlights'])){
-      $data['highlights'] = [];
-      // }
-      // else {
-      if(!empty($data['highlightString'])){
-        $data['highlights'] = explode(',', $data['highlightString']);        
-      }
-      $data['days'] = [];
-      if(!empty($data['dayString'])){
-        $data['days'] = explode(',', $data['dayString']);      
-      }
+      $this->form_validation->set_data($data);
+      $this->form_validation->set_rules('category', 'category', 'required');
+      $this->form_validation->set_rules('name', 'name', 'required');
+      $this->form_validation->set_rules('latitude', 'latitude', 'required');
+      $this->form_validation->set_rules('longitude', 'longitude', 'required');
+      // $this->form_validation->set_rules('start_time', 'start_time', 'required');
+      // $this->form_validation->set_rules('end_time', 'end_time', 'required');
+
+      if($this->form_validation->run() == TRUE){
+       
+        $sid = $data['typeID'];  
+        $data['status'] = 0;
+        // if(!isset($data['highlights'])){
+        $data['highlights'] = [];
+        // }
+        // else {
+        if(!empty($data['highlightString'])){
+          $data['highlights'] = explode(',', $data['highlightString']);        
+        }
+        $data['days'] = [];
+        if(!empty($data['dayString'])){
+          $data['days'] = explode(',', $data['dayString']);      
+        }
 
       //print_r($data); die;
 
-      if($data['price'] == ""){
-        $data['price'] = 0;
+        if(!isset($data['price']) || $data['price'] == ""){
+          $data['price'] = 0;
+        }
+
+        $data['thumbnail'] = '';
+        $data['banner_image'] = '';
+
+        if(!empty($sid)){ 
+            $detailservice = $this->connection->community->service->findOne(["_id"=> new MongoDB\BSON\ObjectId($sid)]); 
+            $data['thumbnail'] = $detailservice['thumbnail']; 
+            $data['banner_image'] = $detailservice['banner_image']; 
+        }
+
+      if(isset($_FILES["thumbnail"])){  
+        if(file_exists($_FILES["thumbnail"]["tmp_name"])){
+          $config['upload_path'] = "uploads/service/";
+          $config['allowed_types'] = 'gif|jpg|png|jpeg';       
+          $config['file_name'] = time();
+          $this->load->library('upload', $config);          
+          $this->upload->initialize($config);     
+            if($this->upload->do_upload('thumbnail')){               
+                $data['thumbnail'] = 'uploads/service/'.$this->upload->data()['file_name'];
+            } 
+        }
       }
 
-      $data['thumbnail'] = '';
-      $data['banner_image'] = '';
-
-      if(!empty($sid)){ 
-          $detailservice = $this->connection->community->service->findOne(["_id"=> new MongoDB\BSON\ObjectId($sid)]); 
-          $data['thumbnail'] = $detailservice['thumbnail']; 
-          $data['banner_image'] = $detailservice['banner_image']; 
+      if(isset($_FILES["banner_image"])){  
+        if(file_exists($_FILES["banner_image"]["tmp_name"])){ 
+          $config['upload_path'] = "uploads/service/";
+          $config['allowed_types'] = 'gif|jpg|png|jpeg';       
+          $config['file_name'] = time();
+          $this->load->library('upload', $config);          
+          $this->upload->initialize($config);     
+            if($this->upload->do_upload('banner_image')){   // echo 555;             
+                $data['banner_image'] = 'uploads/service/'.$this->upload->data()['file_name'];
+            } 
+        }
       }
 
-      if(file_exists($_FILES["thumbnail"]["tmp_name"])){
-        $config['upload_path'] = "uploads/service/";
-        $config['allowed_types'] = 'gif|jpg|png|jpeg';       
-        $config['file_name'] = time();
-        $this->load->library('upload', $config);          
-        $this->upload->initialize($config);     
-          if($this->upload->do_upload('thumbnail')){               
-              $data['thumbnail'] = 'uploads/service/'.$this->upload->data()['file_name'];
-          } 
-      }
+        if(empty($data['thumbnail'])){
+          $data['thumbnail'] = 'uploads/service/service.jpg';
+        }
 
-      if(file_exists($_FILES["banner_image"]["tmp_name"])){ 
-        $config['upload_path'] = "uploads/service/";
-        $config['allowed_types'] = 'gif|jpg|png|jpeg';       
-        $config['file_name'] = time();
-        $this->load->library('upload', $config);          
-        $this->upload->initialize($config);     
-          if($this->upload->do_upload('banner_image')){   // echo 555;             
-              $data['banner_image'] = 'uploads/service/'.$this->upload->data()['file_name'];
-          } 
-      }
+        $data['is_admin'] = 0;
+        $data['created_by'] = new MongoDB\BSON\ObjectId($data['created_by']);
+        unset($data['typeID']);
+        unset($data['dayString']);
+        unset($data['highlightString']);
+        $dt = new DateTime();
+        $serviceCollection = $this->connection->community->service;
+          if(empty($sid)){
+              $data['read']  = 1;
+              $data["created_at"]= $dt->format('Y-m-d H:i:s');  
+              $responce = $serviceCollection->insertOne($data);
+              $insertedId = (string)$responce->getInsertedId();           
+              $checkPayment = $this->checkPayment($insertedId);
 
-      $data['is_admin'] = 0;
-      $data['created_by'] = new MongoDB\BSON\ObjectId($data['created_by']);
-      unset($data['service_id']);
-      unset($data['dayString']);
-      unset($data['highlightString']);
-      $dt = new DateTime();
-      $serviceCollection = $this->connection->community->service;
-      if(empty($sid)){
-          $data["created_at"]= $dt->format('Y-m-d H:i:s');  
-          $responce = $serviceCollection->insertOne($data);
-          $insertedId = $responce->getInsertedId();     
-          $output = ['result' => true, 'message' => 'Service added successfully' , "service"=>$insertedId];
-          $this->response($output, 200); die;
+              $output = ['result' => true, 'message' => 'Service added successfully' , "typeID"=>$insertedId, 'type'=>'service', 'payment'=>$checkPayment]; 
+
+              //$output = ['result' => true, 'message' => 'Service added successfully' , "service"=>$insertedId];
+              $this->response($output, 200); die;
+          }else{
+              $data["updated_at"]= $dt->format('Y-m-d H:i:s');
+              $result=$serviceCollection->updateOne(array('_id'=>new MongoDB\BSON\ObjectId($sid)), array('$set'=>$data));
+              $output = ['result' => true, 'message' => 'Service updated successfully' , "service"=>$sid];
+              $this->response($output, 200); die;
+          }
       }else{
-          $data["updated_at"]= $dt->format('Y-m-d H:i:s');
-          $result=$serviceCollection->updateOne(array('_id'=>new MongoDB\BSON\ObjectId($sid)), array('$set'=>$data));
-          $output = ['result' => true, 'message' => 'Service updated successfully' , "service"=>$sid];
-          $this->response($output, 200); die;
+        $error = $this->validation_errors();
+        $output = ['result' => false, 'message' => $error];      
+        $this->response($output, 422);
       }
+
+     
     } 
-    $error = $this->validation_errors();
-    $output = ['result' => false, 'message' => $error];      
-    $this->response($output, 422);
+    // $error = $this->validation_errors();
+    // $output = ['result' => false, 'message' => $error];      
+    // $this->response($output, 422);
   }
 
   function event_get(){
+    $date = new DateTime();
+    $todaysdate = $date->format('Y-m-d H:i:s');
     $data = $this->post();
     $check_auth_client = $this->check_auth_client();
     $response = array();
@@ -273,7 +313,7 @@ class Common extends REST_Controller {
       // $latitude = $set_data['latitude'];
       // $longitude = $set_data['longitude'];
       $Query = [];
-      //$Query = array('status'=>1);
+      $Query = array('status'=>1); //, 'end_date'=> array('$gt'=> $todaysdate)
       if(isset($set_data['userID'])) { 
         $userID = $set_data['userID'];        
         if(isset($userID)) { 
@@ -281,7 +321,8 @@ class Common extends REST_Controller {
         } 
       }
 
-      $options = ['sort' => ['start_date' => -1]];
+      $options = [];
+      //$options = ['sort' => ['start_date' => -1]];
       $result1 = $this->connection->community->event->find($Query, $options);
       $eventList=array();
       $event=array();
@@ -299,6 +340,12 @@ class Common extends REST_Controller {
           unset($value1['_id']);
           unset($value1['created_by']);
           unset($value1['category']);
+
+            if($value1['status'] === 1){
+              $value1['available'] = 1;
+            }else{
+               $value1['available'] = 0;
+            }
           array_push($eventList, $value1);
       }
       $event = array_values($this->aasort($eventList,"distance"));
@@ -319,11 +366,20 @@ class Common extends REST_Controller {
       if($this->form_validation->run() == TRUE){
         $eventID = $set_data['eventID'];
         $collectionEvent =$this->connection->community->event;
-        $detailEvent = $collectionEvent->findOne(array('_id'=>new MongoDB\BSON\ObjectId($eventID)));
+        $detailEvent = $collectionEvent->findOne(array('_id'=>new MongoDB\BSON\ObjectId($eventID), 'status'=>1));
         if(empty($detailEvent)){
-          $output = ['result' => false, 'message' => 'Error' , "event"=>'no event listed'];
-          $this->response($output, 422); die;
+          $output = ['result' => false, 'message' => 'This event is not available', 'available'=> 0];
+          $this->response($output, 200); die;
         }
+        // $date = new DateTime();
+        // $todaysdate = $date->format('Y-m-d');
+        // if(isset($detailEvent['end_date'])){
+        //     if($detailEvent['end_date'] < $todaysdate){
+        //       $output = ['result' => false, 'message' => 'This event no longer active', 'available'=> 0];
+        //       $this->response($output, 422); die;
+        //     }
+
+        // }
         
         $detailEvent['id'] = (string)$detailEvent['_id']; 
         $detailcat = $this->connection->community->category->findOne(["_id"=> new MongoDB\BSON\ObjectId($detailEvent['category'])]); 
@@ -337,12 +393,14 @@ class Common extends REST_Controller {
         unset($detailEvent['_id']);
         unset($detailEvent['created_by']);
         unset($detailEvent['category']);
+
+        $detailEvent['available'] = 1;
         $output = ['result' => true, 'message' => 'Success' , "event"=>$detailEvent];
         $this->response($output, 200); die;
       }
       $error = $this->validation_errors();
       $output = ['result' => false, 'message' => $error];      
-      $this->response($output, 422);
+      $this->response($output, 200);
     }
   }
 
@@ -352,78 +410,96 @@ class Common extends REST_Controller {
     $response = array();
     if($check_auth_client == true){
 
+        $data = $this->input->post();
+        $this->form_validation->set_data($data);
+        $this->form_validation->set_rules('category', 'category', 'required');
+        $this->form_validation->set_rules('title', 'title', 'required');
+        $this->form_validation->set_rules('latitude', 'latitude', 'required');
+        $this->form_validation->set_rules('longitude', 'longitude', 'required');
 
-      $data = $this->input->post();
-      $eventID = $data['eventID'];
-      $data['thumbnail'] = '';
-      $data['banner_image'] = '';
+        if($this->form_validation->run() == TRUE){
+            $eventID = $data['typeID'];
+        $data['thumbnail'] = '';
+        $data['banner_image'] = '';
 
-      if(!empty($eventID)){ 
-        $detailevent = $this->connection->community->event->findOne(["_id"=> ($eventID)]); 
-        $data['thumbnail'] = $detailevent['thumbnail']; 
-        $data['banner_image'] = $detailevent['banner_image']; 
-      }
+        if(!empty($eventID)){ 
+          $detailevent = $this->connection->community->event->findOne(["_id"=> ($eventID)]); 
+          $data['thumbnail'] = $detailevent['thumbnail']; 
+          $data['banner_image'] = $detailevent['banner_image']; 
+        }
 
-      //$data['thumbnail'] = '';
-      if(file_exists($_FILES["thumbnail"]["tmp_name"])){
-        $config['upload_path'] = "uploads/event/";
-        $config['allowed_types'] = 'gif|jpg|png|JPEG|JPG|jpeg';       
-        $config['file_name'] = time();
-        $this->load->library('upload', $config);          
-        $this->upload->initialize($config);     
-          if($this->upload->do_upload('thumbnail')){               
-              $data['thumbnail'] = 'uploads/event/'.$this->upload->data()['file_name'];
-          } 
-      }
+        if(file_exists($_FILES["thumbnail"]["tmp_name"])){
+          $config['upload_path'] = "uploads/event/";
+          $config['allowed_types'] = 'gif|jpg|png|JPEG|JPG|jpeg';       
+          $config['file_name'] = time();
+          $this->load->library('upload', $config);          
+          $this->upload->initialize($config);     
+            if($this->upload->do_upload('thumbnail')){               
+                $data['thumbnail'] = 'uploads/event/'.$this->upload->data()['file_name'];
+            } 
+        }
 
-      //$data['banner_image'] = '';
-      if(file_exists($_FILES["banner_image"]["tmp_name"])){ 
-        $config['upload_path'] = "uploads/event/";
-        $config['allowed_types'] = 'gif|jpg|png|JPEG|JPG|jpeg';       
-        $config['file_name'] = time();
-        $this->load->library('upload', $config);          
-        $this->upload->initialize($config);     
-          if($this->upload->do_upload('banner_image')){   // echo 555;             
-              $data['banner_image'] = 'uploads/event/'.$this->upload->data()['file_name'];
-          } 
-      }
+        if(file_exists($_FILES["banner_image"]["tmp_name"])){ 
+          $config['upload_path'] = "uploads/event/";
+          $config['allowed_types'] = 'gif|jpg|png|JPEG|JPG|jpeg';       
+          $config['file_name'] = time();
+          $this->load->library('upload', $config);          
+          $this->upload->initialize($config);     
+            if($this->upload->do_upload('banner_image')){   // echo 555;             
+                $data['banner_image'] = 'uploads/event/'.$this->upload->data()['file_name'];
+            } 
+        }
 
+        if(empty($data['thumbnail'])){
+          $data['thumbnail'] = 'uploads/event/event.jpeg';
+        }
 
-      $data['is_admin'] = 0;
-      if($data['price'] == ''){ $data['price'] = 0; }
-      if(!empty($data['status'])){ $data['status'] = 1; }
-      else{ $data['status'] = 0; }
+        $data['is_admin'] = 0;
+        if($data['price'] == ''){ $data['price'] = 0; }
+        // if(!empty($data['status'])){ $data['status'] = 1; }
+        // else{ $data['status'] = 0; }
+        $data['status'] = 0;
+        //$data['created_by'] = (string)$_SESSION['user']['_id'];
+        unset($data['typeID']);
+        $dt = new DateTime();
 
-      //$data['created_by'] = (string)$_SESSION['user']['_id'];
-      unset($data['eventID']);
-      $dt = new DateTime();
-
-      //echo $m4 = new MongoId($data["created_by"]);
-      $data['created_by'] = new MongoDB\BSON\ObjectId($data['created_by']);
+        //echo $m4 = new MongoId($data["created_by"]);
+        $data['created_by'] = new MongoDB\BSON\ObjectId($data['created_by']);
       //print_r($m4); die;
 
 
       //echo $eventID; 
-      $event = $this->connection->community->event;
-      if(empty($eventID)){ //echo 111; die;
-          $data["created_at"]= $dt->format('Y-m-d H:i:s');  
-          $responce = $event->insertOne($data);
-          $insertedId = $responce->getInsertedId();      
-          $output = ['result' => true, 'message' => 'Event added successfully' , "event"=>$insertedId]; 
-          $this->response($output, 200); die;
-      }else{ 
-          $data["updated_at"]= $dt->format('Y-m-d H:i:s');
-          $result=$event->updateOne(array('_id'=>($eventID)), array('$set'=>$data));
-          $output = ['result' => true, 'message' => 'Event updated successfully' , "event"=>$eventID];
-          $this->response($output, 200); die;
+        $event = $this->connection->community->event;
+        if(empty($eventID)){ //echo 111; die;
+            $data['read']  = 1;
+            $data["created_at"]= $dt->format('Y-m-d H:i:s');  
+            $responce = $event->insertOne($data);
+            $insertedId = (string)$responce->getInsertedId(); 
+            $checkPayment = $this->checkPayment($insertedId);
+
+            $output = ['result' => true, 'message' => 'Event added successfully' , "typeID"=>$insertedId, 'type'=>'event', 'payment'=>$checkPayment]; 
+            //$output = ['result' => true, 'message' => 'Event added successfully' , "event"=>$insertedId]; 
+            $this->response($output, 200); die;
+        }else{ 
+            $data["updated_at"]= $dt->format('Y-m-d H:i:s');
+            $result=$event->updateOne(array('_id'=>($eventID)), array('$set'=>$data));
+            $checkPayment = $this->checkPayment($eventID);
+            $output = ['result' => true, 'message' => 'Event updated successfully' , "typeID"=>$eventID, 'type'=>'event', 'payment'=>$checkPayment];
+            $this->response($output, 200); die;
+        }
+      }else{
+          $error = $this->validation_errors();
+          $output = ['result' => false, 'message' => $error];      
+          $this->response($output, 422);
       }
+     
+      
     } 
-    $error = $this->validation_errors();
-    $output = ['result' => false, 'message' => $error];      
-    $this->response($output, 422);
   }    
 
   function advertisement_get(){
+    $date = new DateTime();
+    $todaysdate = $date->format('Y-m-d H:i:s');
     $data = $this->post();
     $check_auth_client = $this->check_auth_client();
     $response = array();
@@ -433,15 +509,16 @@ class Common extends REST_Controller {
       // $latitude = $set_data['latitude'];
       // $longitude = $set_data['longitude'];
       $Query = [];
+      $Query = array('status'=>1); //, 'end_date'=> array('$gt'=> $todaysdate)
       if(isset($set_data['userID'])) { 
         $userID = $set_data['userID'];
-        //$Query = array('status'=>1);
         if(isset($userID)) { 
           $Query = array('created_by' => new MongoDB\BSON\ObjectId($userID));
         } 
       }
 
-      $options = ['sort' => ['start_date' => -1]];
+      $options = [];
+      //$options = ['sort' => ['start_date' => -1]];
       $result1 = $this->connection->community->advertisement->find($Query, $options);
       $add=array();
       $adList=array();
@@ -459,6 +536,13 @@ class Common extends REST_Controller {
           unset($value1['_id']);
           unset($value1['category']);
           unset($value1['created_by']);
+
+          if($value1['status'] === 1){
+              $value1['available'] = 1;
+            }else{
+               $value1['available'] = 0;
+          }
+
           array_push($adList, $value1);
       }
       $add = array_values($this->aasort($adList,"distance"));
@@ -479,11 +563,11 @@ class Common extends REST_Controller {
       if($this->form_validation->run() == TRUE){
         $adID = $set_data['adID'];
         $collectionAd =$this->connection->community->advertisement;
-        $detailAd = $collectionAd->findOne(array('_id'=>new MongoDB\BSON\ObjectId($adID)));
+        $detailAd = $collectionAd->findOne(array('_id'=>new MongoDB\BSON\ObjectId($adID), 'status'=>1));
 
         if(empty($detailAd)){
-          $output = ['result' => false, 'message' => 'Error' , "advertisement"=>'no advertisement listed'];
-          $this->response($output, 422); die;
+          $output = ['result' => false, 'message' => 'This advertisement is not available', 'available'=> 0];
+          $this->response($output, 200); die;
         }
 
         $detailAd['id'] = (string)$detailAd['_id']; 
@@ -498,12 +582,14 @@ class Common extends REST_Controller {
         unset($detailAd['_id']);
         unset($detailAd['created_by']);
         unset($detailAd['category']);
+
+        $detailAd['available'] = 1;
         $output = ['result' => true, 'message' => 'Success' , "advertisement"=>$detailAd];
         $this->response($output, 200); die;
       }
       $error = $this->validation_errors();
       $output = ['result' => false, 'message' => $error];      
-      $this->response($output, 422);
+      $this->response($output, 200);
     }
   }
 
@@ -513,63 +599,85 @@ class Common extends REST_Controller {
     if($check_auth_client == true){
 
       $data = $this->input->post();
-      $adID = $data['adID'];
-      $data['thumbnail'] = '';
-      $data['banner_image'] = '';
-      //print_r($_FILES); die; 
-      if(!empty($adID)){ 
-        $detailevent = $this->connection->community->Advertisement->findOne(["_id"=> ($adID)]); 
-        $data['thumbnail'] = $detailevent['thumbnail']; 
-        $data['banner_image'] = $detailevent['banner_image']; 
-      }
 
-      if(file_exists($_FILES["thumbnail"]["tmp_name"])){
-        $config['upload_path'] = "uploads/ads/";
-        $config['allowed_types'] = 'gif|jpg|png|JPEG|JPG|jpeg';       
-        $config['file_name'] = time();
-        $this->load->library('upload', $config);          
-        $this->upload->initialize($config);     
-          if($this->upload->do_upload('thumbnail')){               
-              $data['thumbnail'] = 'uploads/ads/'.$this->upload->data()['file_name'];
-          } 
-      }
+      $this->form_validation->set_data($data);
+      $this->form_validation->set_rules('category', 'category', 'required');
+      $this->form_validation->set_rules('title', 'title', 'required');
+      $this->form_validation->set_rules('latitude', 'latitude', 'required');
+      $this->form_validation->set_rules('longitude', 'longitude', 'required');
 
-      if(file_exists($_FILES["banner_image"]["tmp_name"])){ 
-        $config['upload_path'] = "uploads/ads/";
-        $config['allowed_types'] = 'gif|jpg|png|JPEG|JPG|jpeg';       
-        $config['file_name'] = time();
-        $this->load->library('upload', $config);          
-        $this->upload->initialize($config);     
-          if($this->upload->do_upload('banner_image')){   // echo 555;             
-              $data['banner_image'] = 'uploads/ads/'.$this->upload->data()['file_name'];
-          } 
-      }
+      if($this->form_validation->run() == TRUE){
 
-      $data['is_admin'] = 0;
-      if($data['price'] == ''){ $data['price'] = 0; }
-      if(!empty($data['status'])){ $data['status'] = 1; }
-      else{ $data['status'] = 0; }
-      unset($data['adID']);
-      $dt = new DateTime();
-      $data['created_by'] = new MongoDB\BSON\ObjectId($data['created_by']);
+          $adID = $data['typeID'];
+          $data['thumbnail'] = '';
+          $data['banner_image'] = '';
+          //print_r($_FILES); die; 
+          if(!empty($adID)){ 
+            $detailevent = $this->connection->community->Advertisement->findOne(["_id"=> new MongoDB\BSON\ObjectId($adID)]); 
+            $data['thumbnail'] = $detailevent['thumbnail']; 
+            $data['banner_image'] = $detailevent['banner_image']; 
+          }
 
-      $advertisement = $this->connection->community->advertisement;
-      if(empty($adID)){ //echo 111; die;
-          $data["created_at"]= $dt->format('Y-m-d H:i:s');  
-          $responce = $advertisement->insertOne($data);
-          $insertedId = $responce->getInsertedId();      
-          $output = ['result' => true, 'message' => 'Advertisement added successfully' , "ad"=>$insertedId]; 
-          $this->response($output, 200); die;
-      }else{  //echo 222; die;
-          $data["updated_at"]= $dt->format('Y-m-d H:i:s');
-          $result=$advertisement->updateOne(array('_id'=>($adID)), array('$set'=>$data));
-          $output = ['result' => true, 'message' => 'Advertisement updated successfully' , "ad"=>$adID];
-          $this->response($output, 200); die;
+          if(file_exists($_FILES["thumbnail"]["tmp_name"])){
+            $config['upload_path'] = "uploads/ads/";
+            $config['allowed_types'] = 'gif|jpg|png|JPEG|JPG|jpeg';       
+            $config['file_name'] = time();
+            $this->load->library('upload', $config);          
+            $this->upload->initialize($config);     
+              if($this->upload->do_upload('thumbnail')){               
+                  $data['thumbnail'] = 'uploads/ads/'.$this->upload->data()['file_name'];
+              } 
+          }
+
+          if(file_exists($_FILES["banner_image"]["tmp_name"])){ 
+            $config['upload_path'] = "uploads/ads/";
+            $config['allowed_types'] = 'gif|jpg|png|JPEG|JPG|jpeg';       
+            $config['file_name'] = time();
+            $this->load->library('upload', $config);          
+            $this->upload->initialize($config);     
+              if($this->upload->do_upload('banner_image')){   // echo 555;             
+                  $data['banner_image'] = 'uploads/ads/'.$this->upload->data()['file_name'];
+              } 
+          }
+
+          if(empty($data['thumbnail'])){
+            $data['thumbnail'] = 'uploads/ads/ad.jpg';
+          }
+
+          $data['is_admin'] = 0;
+          if($data['price'] == ''){ $data['price'] = 0; }
+          // if(!empty($data['status'])){ $data['status'] = 1; }
+          // else{ $data['status'] = 0; }
+          $data['status'] = 0;
+          unset($data['typeID']);
+          $dt = new DateTime();
+          $data['created_by'] = new MongoDB\BSON\ObjectId($data['created_by']);
+
+          $advertisement = $this->connection->community->advertisement;
+          if(empty($adID)){ //echo 111; die;
+              $data['read']  = 1;
+              $data["created_at"]= $dt->format('Y-m-d H:i:s');  
+              $responce = $advertisement->insertOne($data);
+              $insertedId = (string)$responce->getInsertedId();
+              $checkPayment = $this->checkPayment($insertedId);
+              $output = ['result' => true, 'message' => 'Advertisement added successfully' , "typeID"=>$insertedId, 'type'=>'advertisement', 'payment'=>$checkPayment]; 
+              $this->response($output, 200); die;
+          }else{  //echo 222; die;
+
+
+              $data["updated_at"]= $dt->format('Y-m-d H:i:s');
+              $result=$advertisement->updateOne(array('_id'=> new MongoDB\BSON\ObjectId($adID)), array('$set'=>$data));
+              $checkPayment = $this->checkPayment($adID);
+              $output = ['result' => true, 'message' => 'Advertisement updated successfully' , "typeID"=>$adID, 'type'=>'advertisement', 'payment'=>$checkPayment];
+              $this->response($output, 200); die;
+          }
+      }else{
+        $error = $this->validation_errors();
+        $output = ['result' => false, 'message' => $error];      
+        $this->response($output, 422);
       }
     } 
-    $error = $this->validation_errors();
-    $output = ['result' => false, 'message' => $error];      
-    $this->response($output, 422);
+
   }  
 
   function faq_get(){
@@ -608,6 +716,47 @@ class Common extends REST_Controller {
     }
   }
 
+  function page_get(){
+    $check_auth_client = $this->check_auth_client();
+    $response = array();
+    if($check_auth_client == true){ 
+      $set_data = $this->input->get();
+      $page = $set_data['page'];
+      if($page == "tc"){ 
+        $output = ['result' => true, 'for' => 't&c' , "link"=>'uploads/resource/terms-and-conditions-template.pdf'];
+      }
+      else {
+        $output = ['result' => true, 'for' => 'p&p' , "link"=>'uploads/resource/privacy.pdf'];
+      }      
+      $this->response($output, 200); die;
+    }
+  }
+
+  function plan_get(){
+    $check_auth_client = $this->check_auth_client();
+    $response = array();
+    if($check_auth_client == true){ 
+      $set_data = $this->input->get();
+      $type = $set_data['type'];
+      $options = [];
+      $result = $this->connection->community->plan->find(array('type' => $type));
+      $resourceList=array();
+      foreach ($result as $value) { 
+        $value['id'] = (string)$value['_id'];  
+        unset($value['_id']);            
+        array_push($resourceList, $value);
+      }
+
+      if(isset($set_data['userID'])) { 
+        $freetrail = $this->checkFreetrail($set_data['userID'], $type); 
+        if($freetrail == 0) { $freetrail = 1; } else { $freetrail = 0; }
+      }
+      //print_r($freetrail); die;
+      $output = ['result' => true, 'message' => 'Success', "plan"=>$resourceList, "freeTrail"=>$freetrail];
+      $this->response($output, 200); die;
+    }
+  }
+
   function location_get(){
     $get_data = $this->input->get();
 
@@ -622,7 +771,7 @@ class Common extends REST_Controller {
 
         $Query = [];
         $options = [];
-        //$Query = array('status'=>1);
+        $Query = array('status'=>1);
         //$options = ['sort' => ['created_at' => -1], 'limit' => 5]; 
 
         $result = $this->connection->community->service->find($Query, $options);
@@ -685,7 +834,9 @@ class Common extends REST_Controller {
     $check_auth_client = $this->check_auth_client();
     $response = array();
     if($check_auth_client == true){ 
-      $result = $this->connection->community->category->find(array('status'=>1));
+      $Query = array('status'=>1);
+      $options = ['sort' => ['created_at' => -1]]; 
+      $result = $this->connection->community->category->find($Query, $options);
       $categoryList=array();
       foreach ($result as $value) {  
         $value['id'] = (string)$value['_id']; 
@@ -707,6 +858,96 @@ class Common extends REST_Controller {
       $this->response($output, 200); die;
     }
   }
+
+  function categoryList_get(){
+    //$data = $this->post();
+    $date = new DateTime();
+    $todaysdate = $date->format('Y-m-d H:i:s');
+    $get_data = $this->input->get();
+
+    $check_auth_client = $this->check_auth_client();
+    $response = array();
+    if($check_auth_client == true){
+      //$set_data = $this->input->get();
+      $this->form_validation->set_data($get_data);
+      $this->form_validation->set_rules('categoryID', 'categoryID', 'required');
+
+      if($this->form_validation->run() == TRUE){
+        $categoryID = $get_data['categoryID'];
+        $Query = [];
+        $options = [];
+        $Query = array('status'=>1, 'category'=> new MongoDB\BSON\ObjectId($categoryID));       
+        $tableList = array('event','service','advertisement');
+        $allList = [];
+        foreach ($tableList as $tableOne) {
+          $table = $tableOne;
+          $detail = $this->connection->community->$table->find($Query);
+          foreach ($detail as $value) {
+            $data['id'] = (string)$value['_id']; 
+            $data['type'] = $table;
+            $data['banner_image'] = $value['banner_image']; 
+            if($table == 'service') { 
+              $data['title'] = $value['name'];
+              $data["location"] = $value['address'];
+              $data["language"] = '';
+            } else {
+              $data['title'] = $value['title'];
+              $data["location"] = $value['venue'];
+              $data["language"] = $value['language'];
+            }
+            $data['available'] = 1;
+            array_push($allList, $data);
+          }
+        }
+
+        $output = ['result' => true, 'status' => '400', 'message' => 'Success' , "allList"=>$allList];     
+        $this->response($output); die;
+      }
+    }
+    $error = $this->validation_errors();
+    $output = ['result' => false, 'message' => $error];      
+    $this->response($output, 200);
+  }
+
+
+  function search_get(){
+    $key = $this->input->get('key');
+    $coll_array = ["event", "service", "advertisement"];
+    $collection = $this->connection->community;
+    $res = [];
+    foreach ($coll_array as $array) {
+      if($array == "service"){
+        $result = $collection->$array->find(array("name"=> new MongoDB\BSON\Regex($key,'i')));
+      }else{
+        $result = $collection->$array->find(array("title"=> new MongoDB\BSON\Regex($key, 'i')));      
+      }
+      foreach ($result as $value) {
+        $idArray = (string)$value['_id'];               
+        $detail = $this->connection->community->$array->findOne(array('_id'=>new MongoDB\BSON\ObjectId($idArray)));
+
+        if($detail['status'] == 1) { 
+          $data['id'] = (string)$value['_id']; 
+          $data['type'] = $array;
+          $data['banner_image'] = $value['banner_image']; 
+          if($array == 'service') { 
+            $data['title'] = $value['name'];
+            $data["location"] = $value['address'];
+            $data["language"] = '';
+          } else {
+            $data['title'] = $value['title'];
+            $data["location"] = $value['venue'];
+            $data["language"] = $value['language'];
+          }
+          $data['available'] = 1;
+          unset($value['_id']);
+          array_push($res, $data);
+        }
+      }
+    }
+    $output = ['result' => true, 'status' => '400', 'message' => 'Success' , "allList"=>$res];     
+        $this->response($output); die;
+  }
+
 
   function distanceCalculate($lat1, $lon1, $lat2, $lon2, $unit) {
       $theta = $lon1 - $lon2;
@@ -741,8 +982,20 @@ class Common extends REST_Controller {
 
   function isfavourite($userId, $typeId){
     $favCount = 0;
-    $detailfav = $this->connection->community->favourite->find(array('userId'=>$userId, 'typeId'=>$typeId));           
+    $detailfav = $this->connection->community->favourite->find(array('userId'=>new MongoDB\BSON\ObjectId($userId), 'typeId'=>new MongoDB\BSON\ObjectId($typeId)));
     $favCount = count(iterator_to_array($detailfav));
     return $favCount;
+  }
+
+  function checkFreetrail($userId, $type){
+    $trailfav = $this->connection->community->payment->find(array('userId'=>new MongoDB\BSON\ObjectId($userId), 'type'=>$type, 'payType'=>0));
+    $trailCount = count(iterator_to_array($trailfav));
+    return $trailCount;
+  }
+
+  function checkPayment($typeId){
+    $trailfav = $this->connection->community->payment->find(array('typeId'=>new MongoDB\BSON\ObjectId($typeId)));
+    $trailCount = count(iterator_to_array($trailfav));
+    return $trailCount;
   }
 }

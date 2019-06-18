@@ -140,7 +140,8 @@ if(!empty($eventDetail)) {
     $end_date = $eventDetail['end_date'];
     $end_time = $eventDetail['end_time'];
     $description = $eventDetail['description'];
-    $terms = $eventDetail['terms']; 
+    // $terms = $eventDetail['terms']; 
+    if(!empty($eventDetail['terms'])) { $terms = $eventDetail['terms']; }
     if(!empty($eventDetail['thumbnail'])) { $thumbnail = $eventDetail['thumbnail']; }
     if(!empty($eventDetail['thumbnail'])) { $thumbnailInput = $eventDetail['thumbnail']; }
     if(!empty($eventDetail['banner_image'])) { $banner_image = $eventDetail['banner_image']; }
@@ -314,7 +315,7 @@ if(!empty($eventDetail)) {
                   </div>
                   <div class="col-md-3 full-input mr-3">
                       <label for='name'>End Date :</label>
-                      <input type='date' id="end_date" name='end_date' placeholder='Date' value="<?=$end_date;?>">
+                      <input type='date' id="end_date" name='end_date' placeholder='Date' value="<?=$end_date;?>" required><i class="mandfeild">*</i>
                   </div>
                   <div class="col-md-2 full-input mr-3">
                       <label for='name'>Time :</label>
@@ -518,7 +519,7 @@ if(!empty($eventDetail)) {
     if ($('#longitude').val() == "") {
        //this will stop form auto submit thus showing your error
       e.preventDefault();
-      alert('please select valid location');
+      alert('Please select valid location');
     }
 });
 </script>

@@ -29,39 +29,54 @@ class Login extends REST_Controller {
     if($check_auth_client == true){ 
 
       $input=$this->input->post();
-      $collection = $this->connection->community->user;
-      
-      //if(!isset($input['socialId'])){ 
-          $finddata = $collection->findOne(array('email'=>$input['email']));
 
-          
-          if($finddata != ''){ 
+      $this->form_validation->set_data($input);
+      $this->form_validation->set_rules('email', 'email', 'required|valid_email');
+      $this->form_validation->set_rules('login_type', 'login_type', 'required');
+      $this->form_validation->set_rules('user_name', 'user_name', 'required');
+      $this->form_validation->set_rules('device_token', 'device_token', 'required');
+      $this->form_validation->set_rules('device_type', 'device_type', 'required');
 
-            if($finddata['status'] == 0) { 
-              $output = ['result' => false, 'status' => '404', 'message' => 'You are currently inactive please contact customer care']; 
-              $this->response($output); die; 
+      if($this->form_validation->run() == TRUE){
+          $collection = $this->connection->community->user;
+        
+        //if(!isset($input['socialId'])){ 
+            $finddata = $collection->findOne(array('email'=>$input['email']));
+
+            
+            if($finddata != ''){ 
+
+              if($finddata['status'] == 0) { 
+                $output = ['result' => false, 'status' => '404', 'message' => 'You are currently inactive please contact customer care']; 
+                $this->response($output); die; 
+              }
+            
+              $result = $collection->findOneAndUpdate(array('email'=>$input['email']), array('$set'=> array('login_type'=>$input['login_type'], 'device_token'=>$input['device_token'], 'device_type'=>$input['device_type'])));
+            }else{  
+              $input['status'] = 1;
+              $insert=$collection->insertOne($input);
+              $result = $collection->findOne(array('_id'=> $insert->getInsertedId()));     
             }
-          
-            $result = $collection->findOneAndUpdate(array('email'=>$input['email']), array('$set'=> array('login_type'=>$input['login_type'], 'device_token'=>$input['device_token'], 'device_type'=>$input['device_type'])));
-          }else{  
-            $input['status'] = 1;
-            $insert=$collection->insertOne($input);
-            $result = $collection->findOne(array('_id'=> $insert->getInsertedId()));     
-          }
-      // }else{ 
-      //     $finddata = $collection->findOne(array('socialId'=>$input['socialId']));
-      //     if($finddata != ''){ 
-      //       $result = $collection->findOneAndUpdate(array('socialId'=>$input['socialId']), array('$set'=> array('login_type'=>$input['login_type'], 'device_token'=>$input['device_token'], 'device_type'=>$input['device_type'])));
-      //     }else{ 
-      //       $insert=$collection->insertOne($input);
-      //       $result = $collection->findOne(array('_id'=> $insert->getInsertedId()));     
-      //     }
-      // }
+        // }else{ 
+        //     $finddata = $collection->findOne(array('socialId'=>$input['socialId']));
+        //     if($finddata != ''){ 
+        //       $result = $collection->findOneAndUpdate(array('socialId'=>$input['socialId']), array('$set'=> array('login_type'=>$input['login_type'], 'device_token'=>$input['device_token'], 'device_type'=>$input['device_type'])));
+        //     }else{ 
+        //       $insert=$collection->insertOne($input);
+        //       $result = $collection->findOne(array('_id'=> $insert->getInsertedId()));     
+        //     }
+        // }
 
-      $result['id'] = (string)$result['_id']; 
-      unset($result['_id']);
-      $output = ['result' => true, 'status' => '200', 'message' => 'Success', "data"=>$result];      
-      $this->response($output); die;
+        $result['id'] = (string)$result['_id']; 
+        unset($result['_id']);
+        $output = ['result' => true, 'status' => '200', 'message' => 'Success', "data"=>$result];      
+        $this->response($output); die;
+      }else{
+        $error = $this->validation_errors();
+        $output = ['result' => false, 'message' => $error];      
+        $this->response($output, 200);
+      }
+      
     }
   }
 }
